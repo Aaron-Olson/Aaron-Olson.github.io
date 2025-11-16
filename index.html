@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Aaron Olson</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <style>
     html, body {
       margin: 0;
@@ -33,6 +32,7 @@
       align-items: center;
       font-size: 3em;
       opacity: 0;
+      transition: opacity 0.5s;
     }
 
     .page.active {
@@ -41,6 +41,8 @@
 
     .zoom-target {
       display: inline-block;
+      transform-origin: center center;
+      transition: none; /* no auto animation */
     }
   </style>
 </head>
@@ -55,44 +57,54 @@
     const pages = document.querySelectorAll('.page');
     let currentPage = 0;
     let theme = 'light';
+    let scale = 1; // current zoom level
+    const zoomTarget = () => pages[currentPage].querySelector('.zoom-target');
 
-    function zoomFlip() {
-      const current = pages[currentPage];
-      const targets = current.querySelectorAll('.zoom-target');
-      const randomTarget = targets[Math.floor(Math.random() * targets.length)];
-
-      // Zoom into random text with GSAP
-      gsap.to(randomTarget, { scale: 5, duration: 1.5, ease: "power2.inOut" });
-
-      // After zoom, flip theme and show next page
-      setTimeout(() => {
-        theme = theme === 'light' ? 'dark' : 'light';
-        document.body.className = theme;
-
-        current.classList.remove('active');
-        currentPage = (currentPage + 1) % pages.length;
-        const next = pages[currentPage];
-        next.classList.add('active');
-
-        // Reset zoom
-        gsap.to(randomTarget, { scale: 1, duration: 0.5, ease: "power2.out" });
-      }, 1500);
+    function applyZoom() {
+      zoomTarget().style.transform = `scale(${scale})`;
     }
 
-    // Override scroll: trigger zoomFlip instead
+    function flipPage() {
+      // flip theme
+      theme = theme === 'light' ? 'dark' : 'light';
+      document.body.className = theme;
+
+      // switch page
+      pages[currentPage].classList.remove('active');
+      currentPage = (currentPage + 1) % pages.length;
+      pages[currentPage].classList.add('active');
+
+      // reset zoom
+      scale = 1;
+      applyZoom();
+    }
+
+    // Wheel / pinch zoom
     window.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      zoomFlip();
+      if (e.ctrlKey || e.metaKey) { // pinch gesture or ctrl+scroll
+        e.preventDefault();
+        scale += e.deltaY * -0.01; // adjust sensitivity
+        scale = Math.min(Math.max(0.5, scale), 5); // clamp
+        applyZoom();
+
+        if (scale >= 2.0) {
+          flipPage();
+        }
+      }
     }, { passive: false });
 
-    // Keyboard navigation
+    // Keyboard navigation (simulate zoom until threshold)
     window.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-        zoomFlip();
+        scale += 0.2;
+        applyZoom();
+        if (scale >= 2.0) {
+          flipPage();
+        }
       }
     });
 
-    // Touch gestures for mobile
+    // Touch gestures for mobile (simulate zoom with swipe)
     let touchStartY = null;
     window.addEventListener('touchstart', (e) => {
       if (e.touches.length === 1) {
@@ -104,8 +116,12 @@
       if (touchStartY !== null) {
         const touchEndY = e.changedTouches[0].clientY;
         const deltaY = touchStartY - touchEndY;
-        if (deltaY > 50) { // swipe up
-          zoomFlip();
+        if (deltaY > 50) { // swipe up increases zoom
+          scale += 0.3;
+          applyZoom();
+          if (scale >= 2.0) {
+            flipPage();
+          }
         }
         touchStartY = null;
       }
