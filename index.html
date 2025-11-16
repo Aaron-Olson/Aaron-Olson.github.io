@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mandelbrot Zoom Flip</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* Layout */
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden; /* Disable default scroll */
+      font-family: system-ui, Arial, sans-serif;
+      transition: background-color 0.6s, color 0.6s;
+    }
+
+    body.light { background: #ffffff; color: #000000; }
+    body.dark  { background: #000000; color: #ffffff; }
+
+    /* Canvas fills screen */
+    #canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* Overlay UI text (optional) */
+    .hud {
+      position: fixed;
+      top: 1rem; left: 1rem;
+      background: rgba(127,127,127,0.15);
+      backdrop-filter: blur(6px);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+
+    .content {
+      position: fixed;
+      bottom: 1rem; left: 1rem; right: 1rem;
+      display: flex; gap: 1rem; flex-wrap: wrap;
+      justify-content: flex-start; align-items: center;
+    }
+    .chip {
+      padding: 0.4rem 0.7rem;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body class="light">
+  <canvas id="canvas"></canvas>
+  <div class="hud">Scroll or pinch to zoom. Click to recenter. Theme flips as you dive.</div>
+  <div class="content">
+    <div class="chip">About</div>
+    <div class="chip">Work</div>
+    <div class="chip">Contact</div>
+    <div class="chip">Notes</div>
+  </div>
+
+  <script>
+    // --- State ---
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    let width = 0, height = 0, pixelRatio = 1;
+
+    // Mandelbrot view parameters
+    let cx = -0.75;        // center x (real axis)
+    let cy = 0.0;          // center y (imag axis)
+    let scale = 3.0;       // width of view in complex plane units
+    const minScale = 1e-12;
+    const maxIterBase = 250;
+
+    // Theme flip control
+    let theme = 'light';
+    let flipThreshold = scale * 0.7; // next flip target relative to current scale
+
+    // Resize canvas to display size
+    function resize() {
+      pixelRatio = window.devicePixelRatio || 1;
+      width = Math.floor(window.innerWidth);
+      height = Math.floor(window.innerHeight);
+      canvas.width = Math.floor(width * pixelRatio);
+      canvas.height = Math.floor(height * pixelRatio);
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      render();
+    }
+    window.addEventListener('resize', resize, { passive: true });
+    resize();
+
+    // Map screen pixel to complex plane
+    function pixelToComplex(ix, iy) {
+      const x = (ix / (width - 1)) - 0.5; // -0.5..0.5
+      const y = (iy / (height - 1)) - 0.5;
+      const aspect = width / height;
+      return {
+        cr: cx + x * scale,
+        ci: cy + y * scale / aspect
+      };
+    }
+
+    // Theme flip logic: flip when scale crosses a fractional threshold (creates rhythmic inversions)
+    function maybeFlipTheme(prevScale, newScale) {
+      // Flip when zoom reduces scale beyond flipThreshold
+      if (newScale < flipThreshold) {
+        theme = theme === 'light' ? 'dark' : 'light';
+        document.body.className = theme;
+        // Set next threshold deeper (logarithmic spacing)
+        flipThreshold = newScale * 0.7;
+      }
+    }
+
+    // --- Rendering ---
+    function render() {
+      const img = ctx.createImageData(canvas.width, canvas.height);
+      const data = img.data;
+
+      const aspect = width / height;
+      const maxIter = Math.floor(maxIterBase + 40 * Math.log10(3.0 / Math.max(scale, minScale))); // deeper = more iterations
+      const escapeRadius = 4.0;
+
+      // Color scheme: black/white minimal, inverted by theme
+      const fg = theme === 'light' ? 0 : 255;   // inside (non-escaped)
+      const bg = theme === 'light' ? 255 : 0;   // background
+
+      // Row-wise render
+      for (let j = 0; j < canvas.height; j++) {
+        const iy = j / pixelRatio;
+        for (let i = 0; i < canvas.width; i++) {
+          const ix = i / pixelRatio;
+          const xNorm = (ix / (width - 1)) - 0.5;
+          const yNorm = (iy / (height - 1)) - 0.5;
+
+          const cr = cx + xNorm * scale;
+          const ci = cy + yNorm * scale / aspect;
+
+          // Mandelbrot iteration
+          let zr = 0.0, zi = 0.0;
+          let iter = 0;
+          for (; iter < maxIter; iter++) {
+            // z^2 + c
+            const zr2 = zr*zr - zi*zi + cr;
+            const zi2 = 2*zr*zi + ci;
+            zr = zr2; zi = zi2;
+            if (zr*zr + zi*zi > escapeRadius) break;
+          }
+
+          // Smooth iteration count for antialiased banding
+          let shade;
+          if (iter === maxIter) {
+            shade = fg; // inside set
+          } else {
+            const mu = iter - Math.log2(Math.log(zr*zr + zi*zi)) + 4; // smoothing tweak
+            // Map to black/white gradient with subtle edges
+            const t = Math.min(1, Math.max(0, mu / maxIter));
+            shade = Math.round(bg * (1 - t) + fg * t);
+          }
+
+          const idx = (j * canvas.width + i) * 4;
+          data[idx] = shade;
+          data[idx+1] = shade;
+          data[idx+2] = shade;
+          data[idx+3] = 255;
+        }
+      }
+
+      ctx.putImageData(img, 0, 0);
+    }
+
+    // --- Interaction: wheel scroll zoom & pointer centering ---
+    let isZooming = false;
+    let rafId = null;
+
+    // Zoom towards pointer location
+    function zoomAt(px, py, factor) {
+      // Recenter towards pointer in complex plane
+      const before = pixelToComplex(px, py);
+      // Adjust scale
+      const prevScale = scale;
+      scale = Math.max(minScale, Math.min(4.0, scale * factor));
+
+      const after = pixelToComplex(px, py);
+      // Shift center to keep pointer anchored
+      cx += before.cr - after.cr;
+      cy += before.ci - after.ci;
+
+      maybeFlipTheme(prevScale, scale);
+      // Throttle rerender into next frame
+      if (!isZooming) {
+        isZooming = true;
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          render();
+          isZooming = false;
+        });
+      }
+    }
+
+    // Mouse wheel
+    window.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      const direction = e.deltaY > 0 ? 1.0 : -1.0;
+      const factor = Math.pow(0.92, direction * 2); // gentle zoom step
+      zoomAt(px, py, factor);
+    }, { passive: false });
+
+    // Touch pinch (basic)
+    let touchDist = null;
+    let touchCenter = null;
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const [t1, t2] = e.touches;
+        const dx = t1.clientX - t2.clientX;
+        const dy = t1.clientY - t2.clientY;
+        const dist = Math.hypot(dx, dy);
+        const cxPx = (t1.clientX + t2.clientX) / 2;
+        const cyPx = (t1.clientY + t2.clientY) / 2;
+
+        if (touchDist !== null) {
+          const factor = dist / touchDist;
+          zoomAt(cxPx, cyPx, 1 / Math.max(0.5, Math.min(2.0, factor)));
+        }
+        touchDist = dist;
+        touchCenter = { x: cxPx, y: cyPx };
+      }
+    }, { passive: false });
+    window.addEventListener('touchend', () => { touchDist = null; touchCenter = null; }, { passive: true });
+
+    // Click to smoothly recenter at pointer
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      const target = pixelToComplex(px, py);
+      // Easing recenter
+      const steps = 10;
+      const startCx = cx, startCy = cy;
+      const endCx = target.cr, endCy = target.ci;
+      let k = 0;
+      function step() {
+        k++;
+        const t = k / steps;
+        cx = startCx * (1 - t) + endCx * t;
+        cy = startCy * (1 - t) + endCy * t;
+        render();
+        if (k < steps) requestAnimationFrame(step);
+      }
+      step();
+    });
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
