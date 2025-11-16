@@ -60,6 +60,10 @@
     let scale = 1; // current zoom level
     const zoomTarget = () => pages[currentPage].querySelector('.zoom-target');
 
+    const ZOOM_MIN = 0.5;
+    const ZOOM_MAX = 5;
+    const FLIP_THRESHOLD = 3.0; // <-- higher threshold before flipping
+
     function applyZoom() {
       zoomTarget().style.transform = `scale(${scale})`;
     }
@@ -79,17 +83,16 @@
       applyZoom();
     }
 
-    // Wheel / pinch zoom
+    // Wheel / trackpad scroll zoom
     window.addEventListener('wheel', (e) => {
-      if (e.ctrlKey || e.metaKey) { // pinch gesture or ctrl+scroll
-        e.preventDefault();
-        scale += e.deltaY * -0.01; // adjust sensitivity
-        scale = Math.min(Math.max(0.5, scale), 5); // clamp
-        applyZoom();
+      e.preventDefault();
+      // scroll down = zoom in, scroll up = zoom out
+      scale += e.deltaY * -0.01; 
+      scale = Math.min(Math.max(ZOOM_MIN, scale), ZOOM_MAX);
+      applyZoom();
 
-        if (scale >= 2.0) {
-          flipPage();
-        }
+      if (scale >= FLIP_THRESHOLD) {
+        flipPage();
       }
     }, { passive: false });
 
@@ -97,14 +100,20 @@
     window.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowDown' || e.key === 'PageDown') {
         scale += 0.2;
+        scale = Math.min(scale, ZOOM_MAX);
         applyZoom();
-        if (scale >= 2.0) {
+        if (scale >= FLIP_THRESHOLD) {
           flipPage();
         }
       }
+      if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        scale -= 0.2;
+        scale = Math.max(scale, ZOOM_MIN);
+        applyZoom();
+      }
     });
 
-    // Touch gestures for mobile (simulate zoom with swipe)
+    // Touch gestures for mobile (simulate zoom with swipe up/down)
     let touchStartY = null;
     window.addEventListener('touchstart', (e) => {
       if (e.touches.length === 1) {
@@ -116,12 +125,17 @@
       if (touchStartY !== null) {
         const touchEndY = e.changedTouches[0].clientY;
         const deltaY = touchStartY - touchEndY;
-        if (deltaY > 50) { // swipe up increases zoom
+        if (deltaY > 50) { // swipe up = zoom in
           scale += 0.3;
+          scale = Math.min(scale, ZOOM_MAX);
           applyZoom();
-          if (scale >= 2.0) {
+          if (scale >= FLIP_THRESHOLD) {
             flipPage();
           }
+        } else if (deltaY < -50) { // swipe down = zoom out
+          scale -= 0.3;
+          scale = Math.max(scale, ZOOM_MIN);
+          applyZoom();
         }
         touchStartY = null;
       }
