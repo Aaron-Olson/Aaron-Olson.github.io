@@ -1,145 +1,245 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Aaron Olson</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Futuristic TRON Tunnel</title>
+  <!-- Futuristic font -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
   <style>
     html, body {
       margin: 0;
-      padding: 0;
       height: 100%;
-      overflow: hidden; /* disable normal scroll */
-      font-family: Arial, sans-serif;
-      transition: background 1s, color 1s;
+      background: #000;
+      color: #9ef;
+      font-family: 'Orbitron', sans-serif;
+      perspective: 1200px;
+      overflow-y: scroll;
     }
 
-    body.light {
-      background: white;
-      color: black;
-    }
-
-    body.dark {
-      background: black;
-      color: white;
-    }
-
-    .page {
-      position: absolute;
+    /* Glowing grid overlay */
+    body::before {
+      content: "";
+      position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
+      background-image: 
+        linear-gradient(to right, rgba(0,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0,255,255,0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .scene {
+      transform-style: preserve-3d;
+    }
+
+    .hex {
+      position: relative;
+      height: 100vh;
+      transform-style: preserve-3d;
+    }
+
+    .face {
+  position: absolute;
+  top: 0;
+  height: 100vh;
+  width: 35vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  font-size: 1.2rem;
+  padding: 2rem;
+  transform-origin: center center;
+  border: 2px solid rgba(0, 255, 255, 0.15);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2), inset 0 0 30px rgba(0, 255, 255, 0.1);
+  animation: glowPulse 3s ease-in-out infinite;
+
+  background-image: 
+    linear-gradient(to right, rgba(0,255,255,0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,255,255,0.15) 1px, transparent 1px),
+    linear-gradient(to right, rgba(10,42,58,0.9), rgba(15,63,63,0.9));
+  background-size: 40px 40px, 40px 40px, cover;
+  background-blend-mode: lighten;
+}
+
+
+
+    .face.center {
+      left: 32.5vw;
+      transform: translateZ(0);
+      z-index: 2;
+      background: #111;
+      box-shadow: 0 0 40px rgba(0, 255, 255, 0.3);
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .face.left {
+      left: 0;
+      transform: rotateY(75deg) translateX(-6vw);
+      z-index: 1;
+    }
+
+    .face.right {
+      right: 0;
+      transform: rotateY(-75deg) translateX(6vw);
+      z-index: 1;
+    }
+
+    /* Subtle blue-green shades */
+    .shade-a { background: linear-gradient(to right, #0a2a3a, #0f3f3f); }
+    .shade-b { background: linear-gradient(to right, #0f2f4a, #123f3a); }
+    .shade-c { background: linear-gradient(to right, #123a4f, #1a4f3a); }
+
+    /* Glow pulse animation */
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(0,255,255,0.3); }
+      50% { box-shadow: 0 0 40px rgba(0,255,255,0.6); }
+    }
+
+    h2 {
+      margin: 0 0 1rem;
+      font-size: 2rem;
+      color: #9ff;
+    }
+
+    p {
+      max-width: 400px;
+      margin: 0 auto;
+      line-height: 1.5;
+      color: #aee;
+    }
+
+    .panel {
       display: flex;
+      gap: 1rem;
+      font-size: 0.9rem;
+      color: #9ef;
+      margin-top: 1rem;
       justify-content: center;
-      align-items: center;
-      font-size: 3em;
-      opacity: 0;
-      transition: opacity 0.5s;
     }
-
-    .page.active {
-      opacity: 1;
-    }
-
-    .zoom-target {
-      display: inline-block;
-      transform-origin: center center;
-      transition: none; /* no auto animation */
-    }
+    .label { font-weight: bold; }
+    .value { color: #0ff; }
   </style>
 </head>
-<body class="light">
-  <!-- Multiple pages -->
-  <div class="page active"><div class="zoom-target">Page One Content</div></div>
-  <div class="page"><div class="zoom-target">Page Two Content</div></div>
-  <div class="page"><div class="zoom-target">Page Three Content</div></div>
-  <div class="page"><div class="zoom-target">Page Four Content</div></div>
+<body>
+  <div class="scene">
+    <!-- 12 stacked segments with rotating shades and sample content -->
+    <div class="hex">
+      <div class="face left shade-a"></div>
+      <div class="face center shade-b">
+        <h2>Welcome</h2>
+        <p>Step into the tunnel. Scroll down to explore futuristic systems and glowing interfaces.</p>
+        <div class="panel"><span class="label">Mode:</span><span class="value">Init</span></div>
+      </div>
+      <div class="face right shade-c"></div>
+    </div>
+    <div class="hex">
+      <div class="face left shade-b"></div>
+      <div class="face center shade-c">
+        <h2>System Status</h2>
+        <p>All subsystems online. Latency stable. Energy cores at 87% capacity.</p>
+        <div class="panel"><span class="label">Signal:</span><span class="value">Secure</span></div>
+      </div>
+      <div class="face right shade-a"></div>
+    </div>
+    <div class="hex">
+      <div class="face left shade-c"></div>
+      <div class="face center shade-a">
+        <h2>Data Stream</h2>
+        <p>Encrypted packets flowing. Predictive AI models active. Visualization modules engaged.</p>
+        <div class="panel"><span class="label">Throughput:</span><span class="value">1.2Gbps</span></div>
+      </div>
+      <div class="face right shade-b"></div>
+    </div>
+    <div class="hex">
+      <div class="face left shade-a"></div>
+      <div class="face center shade-b">
+        <h2>User Interface</h2>
+        <p>Gesture input calibrated. Voice commands enabled. HUD overlays responsive.</p>
+        <div class="panel"><span class="label">UI Mode:</span><span class="value">Adaptive</span></div>
+      </div>
+      <div class="face right shade-c"></div>
+    </div>
+    <div class="hex">
+      <div class="face left shade-b"></div>
+      <div class="face center shade-c">
+        <h2>Diagnostics</h2>
+        <p>System scan complete. No anomalies detected. Memory usage optimal.</p>
+        <div class="panel"><span class="label">Health:</span><span class="value">Green</span></div>
+      </div>
+      <div class="face right shade-a"></div>
+    </div>
+    <div class="hex">
+      <div class="face left shade-c"></div>
+      <div class="face center shade-a">
+        <h2>Security</h2>
+        <p>Firewall active. Intrusion detection running. All access points secured.</p>
+        <div class="panel"><span class="label">Status:</span><span class="value">Locked</span></div>
+      </div>
+      <div class="face right shade-b"></div>
+    </div>
+    <div class="hex">
+      <div class="face left shade-a"></div>
+      <div class="face center shade-b">
+        <h2>Logs</h2>
+        <p>Recent activity recorded. No unauthorized access. Audit trail preserved.</p>
+        <div class="panel"><span class="label">Entries:</span><span class="value">124</span></div>
+      </div>
+      <div class="face right shade-c"></div>
+    </div>
+    <div class="hex">
+      <div class="face left shade-b"></div>
+      <div class="face center shade-c">
+        <h2>Environment</h2>
+        <p>Ambient temperature: 22°C. Humidity: 45%. Lighting: adaptive mode.</p>
+        <div class="panel"><span class="label">Sensors:</span><span class="value">Nominal</span></div>
+      </div>
+      <div class="face right shade-a"></div>
+    </div>
+    <div class="hex">
+      <div class="face left shade-c"></div>
+      <div class="face center shade-a">
+        <h2>Modules</h2>
+        <p>Subsystems loaded: Navigation, Comms, Analytics. All modules synced.</p>
+        <div class="panel"><span class="label">Modules:</span><span class="value">3 Active</span></div>
+      </div>
+      <div class="face right shade-b"></div>
+    </div>
+        <div class="hex">
+      <div class="face left shade-a"></div>
+      <div class="face center shade-b">
+        <h2>Performance</h2>
+        <p>CPU load: 37%. GPU acceleration active. Frame rate stable at 60fps.</p>
+        <div class="panel"><span class="label">CPU:</span><span class="value">37%</span></div>
+        <div class="panel"><span class="label">GPU:</span><span class="value">Active</span></div>
+      </div>
+      <div class="face right shade-c"></div>
+    </div>
 
-  <script>
-    const pages = document.querySelectorAll('.page');
-    let currentPage = 0;
-    let theme = 'light';
-    let scale = 1; // current zoom level
-    const zoomTarget = () => pages[currentPage].querySelector('.zoom-target');
+    <div class="hex">
+      <div class="face left shade-b"></div>
+      <div class="face center shade-c">
+        <h2>Connectivity</h2>
+        <p>Signal strength: excellent. Uplink secure. Satellite sync verified.</p>
+        <div class="panel"><span class="label">Signal:</span><span class="value">Excellent</span></div>
+        <div class="panel"><span class="label">Sync:</span><span class="value">Verified</span></div>
+      </div>
+      <div class="face right shade-a"></div>
+    </div>
 
-    const ZOOM_MIN = 0.5;
-    const ZOOM_MAX = 5;
-    const FLIP_THRESHOLD = 3.0; // <-- higher threshold before flipping
-
-    function applyZoom() {
-      zoomTarget().style.transform = `scale(${scale})`;
-    }
-
-    function flipPage() {
-      // flip theme
-      theme = theme === 'light' ? 'dark' : 'light';
-      document.body.className = theme;
-
-      // switch page
-      pages[currentPage].classList.remove('active');
-      currentPage = (currentPage + 1) % pages.length;
-      pages[currentPage].classList.add('active');
-
-      // reset zoom
-      scale = 1;
-      applyZoom();
-    }
-
-    // Wheel / trackpad scroll zoom
-    window.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      // scroll down = zoom in, scroll up = zoom out
-      scale += e.deltaY * -0.01; 
-      scale = Math.min(Math.max(ZOOM_MIN, scale), ZOOM_MAX);
-      applyZoom();
-
-      if (scale >= FLIP_THRESHOLD) {
-        flipPage();
-      }
-    }, { passive: false });
-
-    // Keyboard navigation (simulate zoom until threshold)
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-        scale += 0.2;
-        scale = Math.min(scale, ZOOM_MAX);
-        applyZoom();
-        if (scale >= FLIP_THRESHOLD) {
-          flipPage();
-        }
-      }
-      if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-        scale -= 0.2;
-        scale = Math.max(scale, ZOOM_MIN);
-        applyZoom();
-      }
-    });
-
-    // Touch gestures for mobile (simulate zoom with swipe up/down)
-    let touchStartY = null;
-    window.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1) {
-        touchStartY = e.touches[0].clientY;
-      }
-    });
-
-    window.addEventListener('touchend', (e) => {
-      if (touchStartY !== null) {
-        const touchEndY = e.changedTouches[0].clientY;
-        const deltaY = touchStartY - touchEndY;
-        if (deltaY > 50) { // swipe up = zoom in
-          scale += 0.3;
-          scale = Math.min(scale, ZOOM_MAX);
-          applyZoom();
-          if (scale >= FLIP_THRESHOLD) {
-            flipPage();
-          }
-        } else if (deltaY < -50) { // swipe down = zoom out
-          scale -= 0.3;
-          scale = Math.max(scale, ZOOM_MIN);
-          applyZoom();
-        }
-        touchStartY = null;
-      }
-    });
-  </script>
+    <div class="hex">
+      <div class="face left shade-c"></div>
+      <div class="face center shade-a">
+        <h2>End of Sequence</h2>
+        <p>You’ve reached the final segment. Scroll up to revisit previous layers.</p>
+        <div class="panel"><span class="label">Status:</span><span class="value">Complete</span></div>
+      </div>
+      <div class="face right shade-b"></div>
+    </div>
+  </div>
 </body>
 </html>
